@@ -1,6 +1,6 @@
 # Importing and exporting data in any format in Clickhouse
 
-ClickHouse supports most of known text and binary data formats. Powerful format support allows easy integration to almost any working data pipelines and to leverage on benefits of ClickHouse.
+ClickHouse supports most of the known text and binary data formats. This allows easy integration into almost any working data pipeline and leveraging on ClickHouse benefits.
 
 ## Standard text formats
 
@@ -10,7 +10,7 @@ CSV is one of the most popular formats to store data due to its simplicity. Impo
 clickhouse-client -q "INSERT INTO some_table FORMAT CSV" < data.csv
 ```
 
-In many cases, CSV files are broken, poorly encoded, have custom delimiters or even line separators. ClickHouse provides ways to handle any of that cases.
+In many cases, CSV files are broken, poorly encoded, and have custom delimiters or even line separators. ClickHouse provides ways to handle any of that cases.
 
 To process CSVs with custom delimiters (`;` in our example), we have to set the following option:
 
@@ -28,7 +28,7 @@ SET format_custom_row_between_delimiter = ';';
 SET format_custom_escaping_rule = 'JSON';
 ```
 
-We've used JSON [escaping rule](https://clickhouse.com/docs/en/operations/settings/settings/#format_custom_escaping_rule), custom value delimiter (`|`) and line separator (`;`) here. After settings are changed, we can continue with importing custom CSV:
+We've used JSON [escaping rule](https://clickhouse.com/docs/en/operations/settings/settings/#format_custom_escaping_rule), custom value delimiter (`|`), and line separator (`;`) here. After the settings are changed, we can continue with import:
 
 ```sql
 INSERT INTO some_table FROM INFILE 'custom.csv'
@@ -42,23 +42,23 @@ Another popular text data format is TSV, which is also supported by ClickHouse w
 clickhouse-client -q "INSERT INTO some_table FORMAT TabSeparated" < data.tsv
 ```
 
-Explore more capabilities when working with CSV formats family in ClickHouse, including rows skipping, controlling Null values, automatic compression and more.
+Explore more capabilities when working with CSV formats family in ClickHouse, including rows skipping, controlling Null values, automatic compression, and more.
 
 ### JSON data
 
-ClickHouse can work with almost any form of JSON data, be that array of values, object of objects or separate JSON objects.
+ClickHouse can work with almost any JSON data, be that an array of values, an object of objects, or separate JSON objects.
 
-For example, logging app can write log as a JSON object per line. This case can be addressed using [JSONEachRow](https://clickhouse.com/docs/en/interfaces/formats/#jsoneachrow) format in ClickHouse:
+For example, a logging app can write logs as a JSON object per line. This case can be addressed using [JSONEachRow](https://clickhouse.com/docs/en/interfaces/formats/#jsoneachrow) format in ClickHouse:
 
 ```bash
 clickhouse-client - q "INSERT INTO sometable FORMAT JSONEachRow" < access.log
 ```
 
-Explore how JSON data of different forms can loaded to ClickHouse as well as exported. Worth mentioning that ClickHouse also supports BSON format, used by MongoDB.
+Explore how JSON data of different forms can be loaded to ClickHouse as well as exported. Worth mentioning that ClickHouse also supports the BSON format used by MongoDB.
 
 ## Regular expressions for custom text formats
 
-Besides standard formats, like CSV or JSON, ClickHouse also supports data import based on regular expressions. In this case, `Regexp` format should be used together with `format_regexp` option containing regular expression with capture groups (treated as table columns):
+Besides standard formats, like CSV or JSON, ClickHouse also supports data import based on regular expressions. In this case, the `Regexp` format should be used together with the `format_regexp` option containing regular expression with capture groups (treated as table columns):
 
 ```sql
 INSERT INTO some_log FROM INFILE 'custom.txt'
@@ -67,7 +67,7 @@ SETTINGS
 FORMAT Regexp
 ```
 
-This query can be used to load following example file:
+This query can be used to load the following example file:
 
 ```
 121201 [notice] - "Started service"
@@ -77,12 +77,11 @@ This query can be used to load following example file:
 
 Read more on how to use Regexp format for data ingesting. 
 
-Another option to process custom text formats is to use a Template format. But Template format is even more powerful in terms of exporting data, because it allows rendering query results into high level formats, like HTML.
-
+Another option to process custom text formats is to use a Template format. But the Template format is even more powerful in terms of exporting data because it allows rendering query results into high-level formats, like HTML.
 
 ## Native and binary formats
 
-ClickHouse has it's own native format that can be used to import and export data. It's more efficient than text formats in terms of processing speed and space usage. Native format is useful to transfer data between ClickHouse servers when they don't have direct connection with each other. For example, to transfer data from local ClickHouse server to ClickHouse Cloud:
+ClickHouse has it's own native format that can be used to import and export data. It's more efficient than text formats regarding processing speed and space usage. Native format is useful for transferring data between ClickHouse servers when they don't have a direct connection with each other. For example, to transfer data from a ClickHouse server to ClickHouse Cloud:
 
 ```bash
 clickhouse-client -q "SELECT * FROM some_table FORMAT Native" | \
@@ -91,7 +90,7 @@ clickhouse-client --host some.aws.clickhouse.cloud --secure \
 -q "INSERT INTO some_table FORMAT Native"
 ```
 
-Binary formats are usually more efficient and safe than text formats, but are limited in support. ClickHouse has RowBinary format for general binary cases and RawBLOB used with, but not limited to, files. Additionally, ClickHouse supports popular serialization formats like Protocol Buffers, Cap’n Proto and Message Pack.
+Binary formats are usually more efficient and safe than text formats but are limited in support. ClickHouse has RowBinary format for general binary cases, and RawBLOB is used with, but not limited to, files. Additionally, ClickHouse supports popular serialization formats like Protocol Buffers, Cap’n Proto and Message Pack.
 
 ## Parquet and other Apache formats
 Apache has multiple data storage and serialization formats that are popular in Hadoop environments. ClickHouse can work with all of them, including Parquet.
@@ -122,13 +121,13 @@ We can also export data to a Parquet file:
 clickhouse-client -q "SELECT * FROM some_table FORMAT Parquet" > file.parquet
 ```
 
-Find out more on other supported Apache formats, such as Avro, Arrow, and ORC.
+Find out more about other supported Apache formats, such as Avro, Arrow, and ORC.
 
 
 ## SQL dumps
-Though SQL dumps are not efficient in terms of storing and transfering data, ClickHouse can load data from MySQL dumps as well as create SQL dumps for Mysql, PostgreSQL and other databases.
+Though SQL dumps are inefficient in storing and transferring data, ClickHouse supports loading data from MySQL dumps and creating SQL dumps for Mysql, PostgreSQL, and other databases.
 
-To create SQL dump, `SQLInsert` format should be used:
+To create an SQL dump, the `SQLInsert` format should be used:
 
 ```sql
 SET output_format_sql_insert_table_name = 'some_data';
@@ -138,7 +137,7 @@ INTO OUTFILE 'dump.sql'
 FORMAT SQLInsert;
 ```
 
-This will create `dump.sql` file with an SQL values dump in it. It will use `some_data` as a table name and skip columns declaration. It can then be fed to other DBMS:
+This will create the `dump.sql` file with an SQL values dump in it. It will use `some_data` as a table name and skip columns declaration. It can then be fed to other DBMS:
 
 ```bash
 psql < dump.sql 
@@ -152,7 +151,7 @@ cat mysql-dump.sql | clickhouse-client -q "INSERT INTO some_data FORMAT MySQLDum
 
 
 ## Null format for performance testing
-There's a special [Null](https://clickhouse.com/docs/en/interfaces/formats/#null) data format which will not print anything but wait for the query to execute:
+There's a special [Null](https://clickhouse.com/docs/en/interfaces/formats/#null) data format that will not print anything but wait for the query to execute:
 
 ```sql
 SELECT *
@@ -163,10 +162,10 @@ FORMAT `Null`
 0 rows in set. Elapsed: 1.112 sec. Processed 131.07 thousand rows, 167.57 MB (117.86 thousand rows/s., 150.68 MB/s.)
 ```
 
-ClickHouse server still returns data to the client, it's just not printed. This makes `Null` format useful for testing queries performance which return a too much data.
+ClickHouse server still returns data to the client, but it's not printed. This makes the `Null` format useful for testing query performance which returns too much data to fit into the terminal.
 
 ## Prettifying command line
-By default, ClickHouse uses [PrettyCompact](https://clickhouse.com/docs/en/interfaces/formats/#prettycompact) format for the command line client.  It outputs data in blocks sometimes (as soon as results are returned):
+By default, ClickHouse uses [PrettyCompact](https://clickhouse.com/docs/en/interfaces/formats/#prettycompact) format for the command line client. It outputs data in blocks sometimes (as soon as results are returned):
 
 ```
 ┌─id──────────────────────────┬─gender─┬─birth_year─┐
@@ -197,7 +196,7 @@ FORMAT PrettyCompactMonoBlock;
 └─────────────────────────────┴────────┴────────────┘
 ```
 
-Less compact, but easier to percieve is the [Pretty](https://clickhouse.com/docs/en/interfaces/formats/#pretty) format (also [PrettyMonoBlock](https://clickhouse.com/docs/en/interfaces/formats/#prettymonoblock) is available for single table output):
+Less compact but easier to perceive is the [Pretty](https://clickhouse.com/docs/en/interfaces/formats/#pretty) format (also [PrettyMonoBlock](https://clickhouse.com/docs/en/interfaces/formats/#prettymonoblock) is available for single table output):
 
 ```sql
 SELECT FROM some_table
@@ -229,7 +228,7 @@ FORMAT PrettyMonoBlock;
 
 ```
 
-Finally, we can ask ClickHouse to get rid of table grid with the [PrettySpace](https://clickhouse.com/docs/en/interfaces/formats/#prettyspace) format (and [PrettySpaceMonoBlock](https://clickhouse.com/docs/en/interfaces/formats/#prettyspacemonoblock)):
+Finally, we can ask ClickHouse to get rid of the table grid with the [PrettySpace](https://clickhouse.com/docs/en/interfaces/formats/#prettyspace) format (and [PrettySpaceMonoBlock](https://clickhouse.com/docs/en/interfaces/formats/#prettyspacemonoblock)):
 
 ```sql
 SELECT FROM some_table
@@ -251,4 +250,4 @@ FORMAT PrettySpace;
 
 ## Summary
 
-ClickHouse provides tools to work with all imaginable formats, being that standard text and binary or a custom ones. Explore in-depth data formats in the official documentation. Consider using [clickhouse-local](https://clickhouse.com/blog/extracting-converting-querying-local-files-with-sql-clickhouse-local) which is a powerful portable tool to query, convert and transform data from local files.
+ClickHouse provides tools for all imaginable formats - standard text, binary or custom ones. Explore in-depth data formats in the official documentation. Consider using [clickhouse-local](https://clickhouse.com/blog/extracting-converting-querying-local-files-with-sql-clickhouse-local), which is a powerful portable tool to query, convert and transform data from local files.
