@@ -89,7 +89,7 @@ CREATE TABLE wikistat_top_projects
     `hits` UInt32
 )
 ENGINE = SummingMergeTree
-ORDER BY (date, project, hits);
+ORDER BY (date, project);
 
 Ok.
 
@@ -204,9 +204,9 @@ All metadata on materialized view tables is available in the system database. E.
 
 ```
 SELECT
-    sum(rows) AS rows,
-    formatReadableSize(sum(bytes_on_disk)) AS total_bytes_on_disk
-FROM system.parts
+    rows,
+    formatReadableSize(total_bytes) AS total_bytes
+FROM system.tables
 WHERE table = 'wikistat_top_projects'
 
 
@@ -358,9 +358,9 @@ At the query time, we use the corresponding `Merge` combinator to retrieve value
 ```
 SELECT
     date,
-    minMerge(min_hits_per_hour),
-    maxMerge(max_hits_per_hour),
-    avgMerge(avg_hits_per_hour)
+    minMerge(min_hits_per_hour) min_hits_per_hour,
+    maxMerge(max_hits_per_hour) max_hits_per_hour,
+    avgMerge(avg_hits_per_hour) avg_hits_per_hour
 FROM wikistat_daily_summary
 WHERE project = 'en'
 GROUP BY date
@@ -371,14 +371,15 @@ Notice we get exactly the same results but thousands of times faster:
 
 
 ```
-┌───────date─┬─minMerge(min_hits_per_hour)─┬─maxMerge(max_hits_per_hour)─┬─avgMerge(avg_hits_per_hour)─┐
-│ 2015-05-01 │                           1 │                       36802 │           4.586310181621408 │
-│ 2015-05-02 │                           1 │                       23331 │           4.241388590780171 │
+┌───────date─┬─min_hits_per_hour─┬─max_hits_per_hour─┬──avg_hits_per_hour─┐
+│ 2015-05-01 │                 1 │             36802 │  4.586310181621408 │
+│ 2015-05-02 │                 1 │             23331 │  4.241388590780171 │
+│ 2015-05-03 │                 1 │             24678 │  4.317835245126423 │
 ...
-└────────────┴─────────────────────────────┴─────────────────────────────┴─────────────────────────────┘
+└────────────┴───────────────────┴───────────────────┴────────────────────┘
+
 
 32 rows in set. Elapsed: 0.005 sec. Processed 9.54 thousand rows, 1.14 MB (1.76 million rows/s., 209.01 MB/s.)
-
 ```
 
 
