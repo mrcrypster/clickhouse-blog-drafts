@@ -273,36 +273,29 @@ Suppose we have the following type of query being executed frequently:
 
 ```
 SELECT
-    toStartOfMonth(date) AS month,
-    min(h) min_hits_per_day,
-    max(h) max_hits_per_day,
-    avg(h) AS avg_hits_per_day
-FROM
-(
-    SELECT
-        toDate(time) AS date,
-        sum(hits) AS h
-    FROM wikistat
-    WHERE project = 'en'
-    GROUP BY
-        date
-)
-GROUP BY
-    month
+    toDate(time) AS date,
+    min(hits) AS min_hits_per_hour,
+    max(hits) AS max_hits_per_hour,
+    avg(hits) AS avg_hits_per_hour
+FROM wikistat
+WHERE project = 'en'
+GROUP BY date
 ```
 
 
-This gives us the monthly min, max and average of hits per day for the given project:
+This gives us the daily min, max and average of hits per hour for the given project:
 
 
 ```
-┌──────month─┬─min_hits_per_day─┬─max_hits_per_day─┬───avg_hits_per_day─┐
-│ 2015-05-01 │         25075768 │         38849739 │  35425165.93548387 │
-│ 2015-06-01 │         31894070 │         43007045 │ 38915493.333333336 │
-│ 2023-01-01 │              702 │              702 │                702 │
-└────────────┴──────────────────┴──────────────────┴────────────────────┘
+┌───────date─┬─min_hits_per_hour─┬─max_hits_per_hour─┬──avg_hits_per_hour─┐
+│ 2015-05-01 │                 1 │             36802 │  4.586310181621408 │
+│ 2015-05-02 │                 1 │             23331 │  4.241388590780171 │
+│ 2015-05-03 │                 1 │             24678 │  4.317835245126423 │
+...
+└────────────┴───────────────────┴───────────────────┴────────────────────┘
 
-2 rows in set. Elapsed: 17.503 sec. Processed 994.11 million rows, 13.03 GB (56.80 million rows/s., 744.28 MB/s.)
+
+38 rows in set. Elapsed: 8.970 sec. Processed 994.11 million rows
 ```
 
 
@@ -316,41 +309,29 @@ We’ll use `min`, `max`, and `avg` states in our example. In the target table f
 
 
 ```
-CREATE TABLE wikistat_monthly_summary
+CREATE TABLE wikistat_daily_summary
 (
-    `month` Date,
     `project` String,
-    `min_hits` AggregateFunction(min, UInt64),
-    `max_hits` AggregateFunction(max, UInt64),
-    `avg_hits` AggregateFunction(avg, UInt64)
+    `date` Date,
+    `min_hits_per_hour` AggregateFunction(min, UInt64),
+    `max_hits_per_hour` AggregateFunction(max, UInt64),
+    `avg_hits_per_hour` AggregateFunction(avg, UInt64)
 )
 ENGINE = AggregatingMergeTree
-ORDER BY (project, month);
+ORDER BY (project, date);
 
 Ok.
 
-CREATE MATERIALIZED VIEW wikistat_monthly_summary_mv
-TO wikistat_monthly_summary AS
+CREATE MATERIALIZED VIEW wikistat_daily_summary_mv
+TO wikistat_daily_summary AS
 SELECT
-    toStartOfMonth(date) AS month,
     project,
-    minState(h) AS min_hits,
-    maxState(h) AS max_hits,
-    avgState(h) AS avg_hits
-FROM
-(
-    SELECT
-        toDate(time) AS date,
-        sum(hits) AS h,
-        project
-    FROM wikistat
-    GROUP BY
-        project,
-        date
-)
-GROUP BY
-    project,
-    month
+    toDate(time) AS date,
+    minState(hits) AS min_hits_per_hour,
+    maxState(hits) AS max_hits_per_hour,
+    avgState(hits) AS avg_hits_per_hour
+FROM wikistat
+GROUP BY project, date
 ```
 
 
@@ -358,26 +339,14 @@ Let’s also populate it with data:
 
 
 ```
-INSERT INTO wikistat_monthly_summary SELECT
-    toStartOfMonth(date) AS month,
+INSERT INTO wikistat_daily_summary SELECT
     project,
-    minState(h) AS min,
-    maxState(h) AS max,
-    avgState(h) AS avg
-FROM
-(
-    SELECT
-        toDate(time) AS date,
-        sum(hits) AS h,
-        project
-    FROM wikistat
-    GROUP BY
-        project,
-        date
-)
-GROUP BY
-    project,
-    month
+    toDate(time) AS date,
+    minState(hits) AS min_hits_per_hour,
+    maxState(hits) AS max_hits_per_hour,
+    avgState(hits) AS avg_hits_per_hour
+FROM wikistat
+GROUP BY project, date
 
 0 rows in set. Elapsed: 33.685 sec. Processed 994.11 million rows
 ```
@@ -388,13 +357,13 @@ At the query time, we use the corresponding `Merge` combinator to retrieve value
 
 ```
 SELECT
-    month,
-    minMerge(min_hits),
-    maxMerge(max_hits),
-    avgMerge(avg_hits)
-FROM wikistat_monthly_summary
+    date,
+    minMerge(min_hits_per_hour),
+    maxMerge(max_hits_per_hour),
+    avgMerge(avg_hits_per_hour)
+FROM wikistat_daily_summary
 WHERE project = 'en'
-GROUP BY month
+GROUP BY date
 ```
 
 
@@ -402,12 +371,14 @@ Notice we get exactly the same results but thousands of times faster:
 
 
 ```
-┌──────month─┬─minMerge(min)─┬─maxMerge(max)─┬──────avgMerge(avg)─┐
-│ 2015-05-01 │      25075768 │      38849739 │  35425165.93548387 │
-│ 2015-06-01 │      31894070 │      43007045 │ 38915493.333333336 │
-└────────────┴───────────────┴───────────────┴────────────────────┘
+┌───────date─┬─minMerge(min_hits_per_hour)─┬─maxMerge(max_hits_per_hour)─┬─avgMerge(avg_hits_per_hour)─┐
+│ 2015-05-01 │                           1 │                       36802 │           4.586310181621408 │
+│ 2015-05-02 │                           1 │                       23331 │           4.241388590780171 │
+...
+└────────────┴─────────────────────────────┴─────────────────────────────┴─────────────────────────────┘
 
-2 rows in set. Elapsed: 0.003 sec.
+32 rows in set. Elapsed: 0.005 sec. Processed 9.54 thousand rows, 1.14 MB (1.76 million rows/s., 209.01 MB/s.)
+
 ```
 
 
