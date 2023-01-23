@@ -140,9 +140,10 @@ Since `wikistat_top_projects` is a table, we have all power of ClickHouse SQL to
 ```
 SELECT
     project,
-    hits
+    sum(hits) hits
 FROM wikistat_top_projects
 WHERE date = '2015-05-01'
+GROUP BY project
 ORDER BY hits DESC
 LIMIT 10
 
@@ -163,7 +164,7 @@ LIMIT 10
 ```
 
 
-Notice this took ClickHouse 3ms to generate the same result, as opposed to 15 seconds with the original query.
+Notice this took ClickHouse 3ms to generate the same result, as opposed to 15 seconds with the original query. Also mention, that we still need to use `GROUP BY` as `SummingMergeTree` engine is async (this saves resources and reduces impact on query processing) and some values can be uncalculated.
 
 
 #### Managing materialized views
